@@ -1,4 +1,9 @@
-import { AIRBOAT_PROFILES } from './parameters';
+import {
+  GLIDE_BREAK_TERRAINS,
+  SAFE_TERRAIN_COST,
+  TERRAIN_FUEL_LPH,
+  TERRAIN_SPEED_KMH,
+} from './parameters';
 import type { RoutingProfile } from './parameters';
 import { Graph } from './graph';
 import type {  Edge, GraphNode } from './graph'
@@ -12,10 +17,28 @@ function calculateCost(edge: Edge, targetNode: GraphNode, profile: RoutingProfil
   if (!targetNode.state.isWalkable) return Infinity;
 
   const terrain = targetNode.state.terrainType;
-  const dangerMultipliers = AIRBOAT_PROFILES[profile];
-  const multiplier = dangerMultipliers[terrain] ?? 10.0;
+  const w = edge.weight;
 
-  return edge.weight * multiplier;
+  switch (profile) {
+    case 'shortest':
+      return w;
+    case 'fast': {
+      const speed = TERRAIN_SPEED_KMH[terrain] ?? 5;
+      return speed > 0 ? w / speed : Infinity;
+    }
+    case 'economical': {
+      const fuel = TERRAIN_FUEL_LPH[terrain] ?? 40;
+      return Number.isFinite(fuel) ? w * fuel : Infinity;
+    }
+    case 'gliding':
+      if (GLIDE_BREAK_TERRAINS.has(terrain)) return Infinity;
+      return w * 1.2;
+    case 'safe':
+    default: {
+      const multiplier = SAFE_TERRAIN_COST[terrain] ?? 10;
+      return w * multiplier;
+    }
+  }
 }
 
 function reconstructBidirectionalPath(

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv()
 
 # Import models so SQLModel.metadata is populated
-from app.core.config import configs  # noqa: E402
+from app.core.config import settings  # noqa: E402
 from app.model.base_model import BaseModel  # noqa: E402  (registers SQLModel metadata)
 from app.model.map_graph import Map, Node, Edge  # noqa: E402,F401
 
@@ -23,7 +23,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Inject DB URL from app config
-config.set_main_option("sqlalchemy.url", configs.DATABASE_URI)
+config.set_main_option("sqlalchemy.url", settings.database_uri)
 
 target_metadata = BaseModel.metadata
 

@@ -1,55 +1,64 @@
 from typing import List
-from app.core.config import configs
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundError, ValidationError
 from app.repository.map_repository import MapRepository
 from app.schema.geojson_schema import Feature, FeatureCollection
-from app.schema.map_schema import BoundingBox, CreateMap, ImportResult, MapAreaResponse
-from app.services.base_service import BaseService
+from app.schema.map_schema import (
+    BoundingBox,
+    CreateMap,
+    EdgeResponse,
+    ImportResult,
+    MapAreaResponse,
+    NodeResponse,
+)
+from app.services.edge_service import edge_to_dict
 
 
-class MapService(BaseService):
-    def __init__(self, map_repository: MapRepository):
+class MapService:
+    def __init__(self, map_repository: MapRepository) -> None:
         self.map_repository = map_repository
-        super().__init__(map_repository)
+
+    def _resolve_pmtiles_url(self, pmtiles_url: str) -> str:
+        if pmtiles_url and not pmtiles_url.startswith("http"):
+            return f"{settings.MARTIN_PUBLIC_URL}/{pmtiles_url}"
+        return pmtiles_url
 
     def list_maps(self):
         maps = self.map_repository.list_maps()
-        for m in maps:
-            if m.pmtiles_url and not m.pmtiles_url.startswith("http"):
-                m.pmtiles_url = f"{configs.MARTIN_PUBLIC_URL}/{m.pmtiles_url}"
+        for map_obj in maps:
+            map_obj.pmtiles_url = self._resolve_pmtiles_url(map_obj.pmtiles_url)
         return maps
 
     def get_map(self, map_id: int):
         map_info = self.map_repository.get_map(map_id)
-        if map_info and map_info.pmtiles_url and not map_info.pmtiles_url.startswith("http"):
-            map_info.pmtiles_url = f"{configs.MARTIN_PUBLIC_URL}/{map_info.pmtiles_url}"
+        map_info.pmtiles_url = self._resolve_pmtiles_url(map_info.pmtiles_url)
         return map_info
 
     def create_map(self, payload: CreateMap):
-        return self.map_repository.create_map(
+        map_obj = self.map_repository.create_map(
             name=payload.name,
             pmtiles_url=payload.pmtiles_url,
             description=payload.description,
         )
+        map_obj.pmtiles_url = self._resolve_pmtiles_url(map_obj.pmtiles_url)
+        return map_obj
 
     def download_area(self, map_id: int, bbox: BoundingBox) -> MapAreaResponse:
         map_info = self.map_repository.get_map(map_id)
+        pmtiles_url = self._resolve_pmtiles_url(map_info.pmtiles_url)
 
         nodes_data = self.map_repository.get_nodes_in_bbox(
             map_id, bbox.min_lon, bbox.min_lat, bbox.max_lon, bbox.max_lat
         )
-
         node_ids = [node["id"] for node in nodes_data]
-        edges_data = []
-        if node_ids:
-            edges_data = self.map_repository.get_edges_by_node_ids(map_id, node_ids)
+        edges_data = self.map_repository.get_edges_by_node_ids(map_id, node_ids)
 
         return MapAreaResponse(
             map_id=map_info.id,
-            pmtiles_url=map_info.pmtiles_url,
-            nodes=nodes_data,
-            edges=edges_data,
+            pmtiles_url=pmtiles_url,
+            nodes=[NodeResponse(**node) for node in nodes_data],
+            edges=[EdgeResponse(**edge_to_dict(edge)) for edge in edges_data],
         )
 
     def export_geojson(self, map_id: int) -> FeatureCollection:

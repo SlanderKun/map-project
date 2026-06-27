@@ -1,31 +1,67 @@
 import { useEffect, useState } from 'react';
 import { db } from '../db/dexieDb';
+import { buildOmtStyle, viewStateFromTileJson, type TileJsonMeta } from '../utils/mapStyle';
 
-const STYLE_ID = 'default';
+function styleKey(mapId: number) {
+  return `map-${mapId}`;
+}
 
-export function useMapStyle() {
+export function useMapStyle(mapId: number | null, pmtilesUrl: string | null) {
   const [styleJson, setStyleJson] = useState<object | null>(null);
-  const [isCached, setIsCached] = useState<boolean | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [viewState, setViewState] = useState({ longitude: 135.07, latitude: 48.48, zoom: 11 });
 
   useEffect(() => {
-    async function load() {
-      const style = await db.styles.get(STYLE_ID);
-      // БАГ 3 FIX: проверяем оба условия — стиль есть И тайлы загружены
-      const meta = await db.meta.get('tilesReady');
-      const ready = !!(style && meta?.value);
+    if (mapId == null || !pmtilesUrl) {
+      setStyleJson(null);
+      setMapReady(false);
+      return;
+    }
 
-      setIsCached(ready);
-      if (ready) {
-        setStyleJson(style!.json);
+    let cancelled = false;
+
+    async function load() {
+      setMapReady(false);
+
+      const cached = await db.styles.get(styleKey(mapId!));
+      const meta = await db.meta.get(`tilesReady:${mapId}`);
+      if (cached && meta?.value) {
+        if (!cancelled) {
+          setStyleJson(cached.json);
+          setIsOffline(true);
+          setMapReady(true);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch(pmtilesUrl!);
+        if (!res.ok) throw new Error(`tilejson ${res.status}`);
+        const tilejson: TileJsonMeta = await res.json();
+        if (cancelled) return;
+
+        setViewState(viewStateFromTileJson(tilejson));
+        setStyleJson(buildOmtStyle(pmtilesUrl!));
+        setIsOffline(false);
+        setMapReady(true);
+      } catch {
+        if (!cancelled) {
+          setStyleJson(null);
+          setMapReady(false);
+        }
       }
     }
-    load();
-  }, []);
 
-  function onDownloaded(json: object) {
+    load();
+    return () => { cancelled = true; };
+  }, [mapId, pmtilesUrl]);
+
+  function onOfflineReady(json: object) {
     setStyleJson(json);
-    setIsCached(true);
+    setIsOffline(true);
+    setMapReady(true);
   }
 
-  return { styleJson, isCached, onDownloaded };
+  return { styleJson, mapReady, isOffline, viewState, onOfflineReady };
 }

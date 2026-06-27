@@ -5,4 +5,5 @@ pmtiles:
   region: "us-east-1"
   endpoint_url: "http://minio:9000"
   sources:
-    my-forestmap: "s3://maps-bucket/khabarovsk.pmtiles"
+    khabarovsk: "s3://maps-bucket/khabarovsk.pmtiles"
+    krasnoyarsk: "s3://maps-bucket/krasnoyarsk.pmtiles"

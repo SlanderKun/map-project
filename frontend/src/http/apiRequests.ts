@@ -30,10 +30,14 @@ export interface ApiEdge {
   updated_at: string;
 }
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`);
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API}${path}`, init);
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json() as Promise<T>;
+}
+
+export async function fetchMaps(): Promise<ApiMap[]> {
+  return apiFetch('/maps');
 }
 
 export async function fetchMap(mapId: number): Promise<ApiMap> {

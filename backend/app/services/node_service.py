@@ -2,21 +2,18 @@ from typing import List
 
 from app.repository.node_repository import NodeRepository
 from app.schema.map_schema import CreateNode, NodeResponse, UpdateNode
-from app.services.base_service import BaseService
 
 
-class NodeService(BaseService):
-    def __init__(self, node_repository: NodeRepository):
+class NodeService:
+    def __init__(self, node_repository: NodeRepository) -> None:
         self.node_repository = node_repository
-        super().__init__(node_repository)
 
     def list_nodes(self, map_id: int) -> List[NodeResponse]:
         nodes = self.node_repository.list_nodes(map_id)
         return [NodeResponse(**node) for node in nodes]
 
     def get_node(self, node_id: int) -> NodeResponse:
-        node = self.node_repository.get_node(node_id)
-        return NodeResponse(**node)
+        return NodeResponse(**self.node_repository.get_node(node_id))
 
     def create_node(self, payload: CreateNode) -> NodeResponse:
         node = self.node_repository.create_node(

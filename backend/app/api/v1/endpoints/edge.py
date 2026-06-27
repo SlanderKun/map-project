@@ -1,60 +1,42 @@
 from typing import List
 
-from dependency_injector.wiring import Provide, inject
 from fastapi import APIRouter, Depends, Query
 
-from app.core.container import Container
+from app.api.deps import get_edge_service
 from app.schema.map_schema import CreateEdge, EdgeResponse, UpdateEdge
 from app.services.edge_service import EdgeService
 
-router = APIRouter(
-    prefix="/edges",
-    tags=["edges"],
-)
+router = APIRouter(prefix="/edges", tags=["edges"])
 
 
 @router.get("", response_model=List[EdgeResponse])
-@inject
 def list_edges(
     map_id: int = Query(...),
-    service: EdgeService = Depends(Provide[Container.edge_service]),
+    service: EdgeService = Depends(get_edge_service),
 ):
     return service.list_edges(map_id)
 
 
 @router.post("", response_model=EdgeResponse)
-@inject
-def create_edge(
-    payload: CreateEdge,
-    service: EdgeService = Depends(Provide[Container.edge_service]),
-):
+def create_edge(payload: CreateEdge, service: EdgeService = Depends(get_edge_service)):
     return service.create_edge(payload)
 
 
 @router.get("/{edge_id}", response_model=EdgeResponse)
-@inject
-def get_edge(
-    edge_id: int,
-    service: EdgeService = Depends(Provide[Container.edge_service]),
-):
+def get_edge(edge_id: int, service: EdgeService = Depends(get_edge_service)):
     return service.get_edge(edge_id)
 
 
 @router.patch("/{edge_id}", response_model=EdgeResponse)
-@inject
 def update_edge(
     edge_id: int,
     payload: UpdateEdge,
-    service: EdgeService = Depends(Provide[Container.edge_service]),
+    service: EdgeService = Depends(get_edge_service),
 ):
     return service.update_edge(edge_id, payload)
 
 
 @router.delete("/{edge_id}")
-@inject
-def delete_edge(
-    edge_id: int,
-    service: EdgeService = Depends(Provide[Container.edge_service]),
-):
+def delete_edge(edge_id: int, service: EdgeService = Depends(get_edge_service)):
     service.delete_edge(edge_id)
     return {"deleted": True}
