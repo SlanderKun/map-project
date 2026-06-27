@@ -4,7 +4,6 @@ import { TerraDraw, TerraDrawPointMode } from 'terra-draw';
 import { TerraDrawMapLibreGLAdapter } from 'terra-draw-maplibre-gl-adapter';
 import type { Point, PointKey } from './../../models/shared.ts';
 
-
 interface Props {
   drawRef: React.RefObject<TerraDraw | null>;
   pendingKey: PointKey | null;
@@ -14,9 +13,13 @@ interface Props {
   onPointPlaced: () => void;
 }
 
+const SOURCE_ID = 'point-labels';
+
 const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onPointAdded, onPointPlaced }) => {
   const { current: map } = useMap();
   const pendingKeyRef = useRef<PointKey | null>(pendingKey);
+  // FIX 3: track whether our source/layer have been added yet
+  const readyRef = useRef(false);
 
   useEffect(() => {
     pendingKeyRef.current = pendingKey;
@@ -27,6 +30,8 @@ const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onP
     const nativeMap = map.getMap();
 
     const init = () => {
+      if (drawRef.current) return;
+
       const draw = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map: nativeMap }),
         modes: [new TerraDrawPointMode()],
@@ -35,15 +40,15 @@ const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onP
       draw.start();
       drawRef.current = draw;
 
-      nativeMap.addSource('point-labels', {
+      nativeMap.addSource(SOURCE_ID, {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
 
       nativeMap.addLayer({
-        id: 'point-labels',
+        id: SOURCE_ID,
         type: 'symbol',
-        source: 'point-labels',
+        source: SOURCE_ID,
         layout: {
           'text-field': ['get', 'label'],
           'text-size': 14,
@@ -56,6 +61,9 @@ const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onP
           'text-halo-width': 2,
         },
       });
+
+      // FIX 3: mark source/layer as ready so the label effect can run
+      readyRef.current = true;
 
       draw.on('change', (ids, type) => {
         if (type === 'create' && pendingKeyRef.current) {
@@ -75,14 +83,12 @@ const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onP
       });
     };
 
-    if (nativeMap.isStyleLoaded()) {
-      init();
-    } else {
-      nativeMap.once('style.load', init);
-    }
+    nativeMap.once('load', init);
+    if (nativeMap.loaded()) init();
 
     return () => {
-      nativeMap.off('style.load', init);
+      nativeMap.off('load', init);
+      readyRef.current = false;
       if (drawRef.current) {
         drawRef.current.stop();
         drawRef.current = null;
@@ -93,12 +99,24 @@ const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onP
   useEffect(() => {
     if (!map) return;
     const nativeMap = map.getMap();
-    const source = nativeMap.getSource('point-labels') as maplibregl.GeoJSONSource;
+
+    // FIX 3: bail out if source hasn't been added yet — avoids the crash
+    if (!readyRef.current) return;
+
+    const source = nativeMap.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
     if (!source) return;
 
     const features = [
-      pointA && { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [pointA.lng, pointA.lat] }, properties: { label: 'A' } },
-      pointB && { type: 'Feature' as const, geometry: { type: 'Point' as const, coordinates: [pointB.lng, pointB.lat] }, properties: { label: 'B' } },
+      pointA && {
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [pointA.lng, pointA.lat] },
+        properties: { label: 'A' },
+      },
+      pointB && {
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [pointB.lng, pointB.lat] },
+        properties: { label: 'B' },
+      },
     ].filter(Boolean);
 
     source.setData({ type: 'FeatureCollection', features });
