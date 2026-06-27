@@ -5,7 +5,7 @@ import { rewriteStyleUrls, rewriteTilesJson } from '../utils/mapProtocol';
 const BASE = 'https://demotiles.maplibre.org';
 const STYLE_URL = `${BASE}/style.json`;
 const TILES_JSON_URL = `${BASE}/tiles/tiles.json`;
-const BATCH_SIZE = 15;
+const BATCH_SIZE = 25;
 
 // Тип для tiles.json
 interface TilesJson {
