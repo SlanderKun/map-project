@@ -36,47 +36,6 @@ def create_map(
 ):
     return service.create_map(payload)
 
-
-@router.get("/{map_id}", response_model=MapInfo)
-@inject
-def get_map(
-    map_id: int,
-    service: MapService = Depends(Provide[Container.map_service]),
-):
-    return service.get_map(map_id)
-
-
-@router.post("/{map_id}/download", response_model=MapAreaResponse)
-@inject
-def download_map_area(
-    map_id: int,
-    bbox: BoundingBox,
-    service: MapService = Depends(Provide[Container.map_service]),
-):
-    return service.download_area(map_id, bbox)
-
-
-@router.get("/{map_id}/geojson", response_model=FeatureCollection)
-@inject
-def export_geojson(
-    map_id: int,
-    service: MapService = Depends(Provide[Container.map_service]),
-):
-    return service.export_geojson(map_id)
-
-
-@router.post("/{map_id}/geojson", response_model=ImportResult)
-@inject
-def import_geojson(
-    map_id: int,
-    collection: FeatureCollection,
-    service: MapService = Depends(Provide[Container.map_service]),
-):
-    return service.import_geojson(map_id, collection)
-
-
-
-
 @router.get("/tilejson", response_model=TileJSONResponse)
 async def get_tilejson():
     minio_url = os.getenv("MINIO_EXTERNAL_URL", "http://localhost:9000")
@@ -131,3 +90,44 @@ async def get_tilejson():
         ],
         "tiles": [tiles_url]
     }
+
+@router.get("/{map_id}", response_model=MapInfo)
+@inject
+def get_map(
+    map_id: int,
+    service: MapService = Depends(Provide[Container.map_service]),
+):
+    return service.get_map(map_id)
+
+
+@router.post("/{map_id}/download", response_model=MapAreaResponse)
+@inject
+def download_map_area(
+    map_id: int,
+    bbox: BoundingBox,
+    service: MapService = Depends(Provide[Container.map_service]),
+):
+    return service.download_area(map_id, bbox)
+
+
+@router.get("/{map_id}/geojson", response_model=FeatureCollection)
+@inject
+def export_geojson(
+    map_id: int,
+    service: MapService = Depends(Provide[Container.map_service]),
+):
+    return service.export_geojson(map_id)
+
+
+@router.post("/{map_id}/geojson", response_model=ImportResult)
+@inject
+def import_geojson(
+    map_id: int,
+    collection: FeatureCollection,
+    service: MapService = Depends(Provide[Container.map_service]),
+):
+    return service.import_geojson(map_id, collection)
+
+
+
+

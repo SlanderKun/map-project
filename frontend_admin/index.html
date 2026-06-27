@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Map Admin</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <h1>Road Map Admin</h1>
+        <div class="controls">
+            <label for="map-select">Map:</label>
+            <select id="map-select">
+                <option value="">-- select a map --</option>
+            </select>
+            <button id="refresh-btn" type="button">Refresh</button>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="nodes" type="button">Nodes</button>
+        <button class="tab-btn" data-tab="edges" type="button">Edges</button>
+    </nav>
+
+    <main>
+        <section id="tab-nodes" class="tab-panel active">
+            <div class="panel-header">
+                <h2>Nodes</h2>
+                <span id="nodes-count" class="count-badge">0</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="datagrid">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Map ID</th>
+                            <th>Lat</th>
+                            <th>Lon</th>
+                            <th>Walkable</th>
+                            <th>Terrain</th>
+                            <th>Created At</th>
+                            <th>Updated At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nodes-tbody">
+                        <tr><td colspan="8" class="empty">Select a map to load nodes.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tab-edges" class="tab-panel">
+            <div class="panel-header">
+                <h2>Edges</h2>
+                <span id="edges-count" class="count-badge">0</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="datagrid">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Map ID</th>
+                            <th>Source ID</th>
+                            <th>Target ID</th>
+                            <th>Weight</th>
+                            <th>Created At</th>
+                            <th>Updated At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="edges-tbody">
+                        <tr><td colspan="7" class="empty">Select a map to load edges.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

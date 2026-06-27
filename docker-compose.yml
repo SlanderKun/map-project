@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgis/postgis:15-3.3
@@ -14,6 +12,11 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mapuser -d forestmap"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio
@@ -24,10 +27,33 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: supersecretpassword
     ports:
-      - "9000:9000" # Порт для API
-      - "9001:9001" # Порт для веб-интерфейса
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # Web console
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  martin:
+    image: ghcr.io/maplibre/martin:latest
+    container_name: martin_server
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      AWS_ENDPOINT_URL: "http://minio:9000"
+      AWS_ACCESS_KEY_ID: "admin"
+      AWS_SECRET_ACCESS_KEY: "supersecretpassword"
+      AWS_REGION: "us-east-1"
+    command: ["--config", "/config/config.yaml"]
+    volumes:
+      - ./martin-config.yaml:/config/config.yaml:ro
+    depends_on:
+      minio:
+        condition: service_healthy
 
   backend:
     build:
@@ -38,20 +64,35 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DB_HOST=postgres 
-      - DB_PORT=5432
-      - DB_USER=mapuser
-      - DB_PASSWORD=mappassword
-      - DB_NAME=forestmap
-
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=admin
-      - MINIO_SECRET_KEY=supersecretpassword
-      - MINIO_BUCKET_NAME=maps-bucket
-      - MINIO_SECURE=False
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_USER: "mapuser"
+      DB_PASSWORD: "mappassword"
+      DB_NAME: "forestmap"
+      MINIO_ENDPOINT: "minio:9000"
+      MINIO_ACCESS_KEY: "admin"
+      MINIO_SECRET_KEY: "supersecretpassword"
+      MINIO_BUCKET_NAME: "maps-bucket"
+      MINIO_SECURE: "False"
+      MINIO_EXTERNAL_URL: "http://localhost:9000"
     depends_on:
-      - postgres
-      - minio
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: map_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   pg_data:

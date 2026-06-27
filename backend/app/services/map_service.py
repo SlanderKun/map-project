@@ -1,4 +1,5 @@
 from typing import List
+from app.core.config import configs
 
 from app.core.exceptions import NotFoundError, ValidationError
 from app.repository.map_repository import MapRepository
@@ -13,10 +14,17 @@ class MapService(BaseService):
         super().__init__(map_repository)
 
     def list_maps(self):
-        return self.map_repository.list_maps()
+        maps = self.map_repository.list_maps()
+        for m in maps:
+            if m.pmtiles_url and not m.pmtiles_url.startswith("http"):
+                m.pmtiles_url = f"{configs.MARTIN_PUBLIC_URL}/{m.pmtiles_url}"
+        return maps
 
     def get_map(self, map_id: int):
-        return self.map_repository.get_map(map_id)
+        map_info = self.map_repository.get_map(map_id)
+        if map_info and map_info.pmtiles_url and not map_info.pmtiles_url.startswith("http"):
+            map_info.pmtiles_url = f"{configs.MARTIN_PUBLIC_URL}/{map_info.pmtiles_url}"
+        return map_info
 
     def create_map(self, payload: CreateMap):
         return self.map_repository.create_map(

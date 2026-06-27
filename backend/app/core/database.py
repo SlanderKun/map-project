@@ -2,24 +2,12 @@ from contextlib import AbstractContextManager, contextmanager
 from typing import Any, Generator
 
 from sqlalchemy import create_engine, orm
-from sqlalchemy.ext.declarative import as_declarative, declared_attr
 from sqlalchemy.orm import Session
-
-
-@as_declarative()
-class BaseModel:
-    id: Any
-    __name__: str
-
-    # Generate __tablename__ automatically
-    @declared_attr
-    def __tablename__(cls) -> str:
-        return cls.__name__.lower()
-
+from sqlmodel import SQLModel, text
 
 class Database:
     def __init__(self, db_url: str) -> None:
-        self._engine = create_engine(db_url, echo=True)
+        self._engine = create_engine(db_url, echo=True, pool_pre_ping=True)
         self._session_factory = orm.scoped_session(
             orm.sessionmaker(
                 autocommit=False,
@@ -29,7 +17,14 @@ class Database:
         )
 
     def create_database(self) -> None:
-        BaseModel.metadata.create_all(self._engine)
+        from sqlmodel import SQLModel, text
+        from app.model.map_graph import Map, Node, Edge  # <--- Обязательно импортировать все модели
+
+        with self._engine.begin() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+
+        SQLModel.metadata.create_all(self._engine)
+        print("База данных и таблицы успешно созданы.")
 
     @contextmanager
     def session(self) -> Generator[Any, Any, AbstractContextManager[Session]]:

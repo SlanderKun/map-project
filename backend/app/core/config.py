@@ -26,6 +26,8 @@ class Configs(BaseSettings):
     DB_PORT: str = os.getenv("DB_PORT", "5432")
     DB_NAME: str = os.getenv("DB_NAME", "roadmap")
 
+    MARTIN_PUBLIC_URL: str = os.getenv("MARTIN_PUBLIC_URL", "http://localhost:3000")
+
 
 
 
