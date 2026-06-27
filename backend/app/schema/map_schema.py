@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pydantic import BaseModel
+
 
 from app.schema.base_schema import ModelBaseInfo
 from app.schema.geojson_schema import FeatureCollection
@@ -79,3 +80,25 @@ class ImportResult(BaseModel):
     map_id: int
     nodes_created: int
     edges_created: int
+
+
+class VectorLayer(BaseModel):
+    id: str
+    fields: Dict[str, str]
+    maxzoom: int
+    minzoom: int
+    description: str
+
+class TileJSONResponse(BaseModel):
+    tilejson: str = "2.0.0"
+    name: str
+    type: str
+    scale: str
+    bounds: List[float]
+    format: str
+    maxzoom: int
+    minzoom: int
+    profile: str
+    version: str
+    vector_layers: List[VectorLayer]
+    tiles: List[str]

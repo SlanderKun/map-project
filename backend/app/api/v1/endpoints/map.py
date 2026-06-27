@@ -12,6 +12,7 @@ from app.schema.map_schema import (
     ImportResult,
     MapAreaResponse,
     MapInfo,
+    TileJSONResponse,
 )
 from app.services.map_service import MapService
 
@@ -76,7 +77,7 @@ def import_geojson(
 
 
 
-@router.get("/tilejson")
+@router.get("/tilejson", response_model=TileJSONResponse)
 async def get_tilejson():
     minio_url = os.getenv("MINIO_EXTERNAL_URL", "http://localhost:9000")
     bucket_name = os.getenv("MINIO_BUCKET_NAME", "maps-bucket")
