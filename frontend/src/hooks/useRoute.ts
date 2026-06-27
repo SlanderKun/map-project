@@ -16,9 +16,10 @@ export function useRoute(pointA: Point | null, pointB: Point | null, profile: Ro
   const graphRef = useRef<Graph | null>(null);
   const [route, setRoute] = useState<RouteCoord[]>([]);
 
-  // Строим граф один раз при монтировании
+  // Строим граф один раз при монтировании — сначала синхронизируем с бэком
   useEffect(() => {
     async function buildGraph() {
+      await mapDataService.syncMap(MAP_ID);
       const [nodes, edges] = await Promise.all([
         mapDataService.getNodes(MAP_ID),
         mapDataService.getEdges(MAP_ID),

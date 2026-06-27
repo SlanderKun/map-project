@@ -106,18 +106,9 @@ const DrawControl: React.FC<Props> = ({ drawRef, pendingKey, pointA, pointB, onP
     const source = nativeMap.getSource(SOURCE_ID) as maplibregl.GeoJSONSource;
     if (!source) return;
 
-    const features = [
-      pointA && {
-        type: 'Feature' as const,
-        geometry: { type: 'Point' as const, coordinates: [pointA.lng, pointA.lat] },
-        properties: { label: 'A' },
-      },
-      pointB && {
-        type: 'Feature' as const,
-        geometry: { type: 'Point' as const, coordinates: [pointB.lng, pointB.lat] },
-        properties: { label: 'B' },
-      },
-    ].filter(Boolean);
+    const features: GeoJSON.Feature[] = [];
+    if (pointA) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [pointA.lng, pointA.lat] }, properties: { label: 'A' } });
+    if (pointB) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [pointB.lng, pointB.lat] }, properties: { label: 'B' } });
 
     source.setData({ type: 'FeatureCollection', features });
   }, [pointA, pointB]);

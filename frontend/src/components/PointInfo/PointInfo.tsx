@@ -1,5 +1,4 @@
 import React from 'react';
-import PointButton from '../PointButton/PointButton';
 
 interface Props {
   label: string;

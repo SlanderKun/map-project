@@ -32,7 +32,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -48,12 +48,17 @@ services:
       AWS_ACCESS_KEY_ID: "admin"
       AWS_SECRET_ACCESS_KEY: "supersecretpassword"
       AWS_REGION: "us-east-1"
-    command: ["--config", "/config/config.yaml"]
+    command: ["--config", "/config/config.yaml", "--on-invalid", "warn"]
     volumes:
       - ./martin-config.yaml:/config/config.yaml:ro
     depends_on:
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/catalog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -75,6 +80,7 @@ services:
       MINIO_BUCKET_NAME: "maps-bucket"
       MINIO_SECURE: "False"
       MINIO_EXTERNAL_URL: "http://localhost:9000"
+      BACKEND_CORS_ORIGINS: '["http://localhost:5173"]'
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,6 +96,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: "admin"
     ports:
       - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
     depends_on:
       postgres:
         condition: service_healthy
@@ -97,3 +105,4 @@ services:
 volumes:
   pg_data:
   minio_data:
+  pgadmin_data:

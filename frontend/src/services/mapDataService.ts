@@ -1,5 +1,6 @@
 import { db } from '../db/dexieDb';
 import { fetchMap, fetchNodes, fetchEdges } from '../http/apiRequests';
+import type { ApiNode } from '../http/apiRequests';
 import type { MapRecord, NodeRecord, EdgeRecord } from '../db/dexieDb';
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
@@ -11,19 +12,12 @@ export interface EdgeWithCoords extends EdgeRecord {
 
 // ─── Адаптеры: API → IndexedDB ───────────────────────────────────────────────
 
-function adaptNode(apiNode: {
-  id: number;
-  map_id: number;
-  geom: { type: 'Point'; coordinates: [number, number] };
-  is_walkable: boolean;
-  terrain_type: string;
-}): NodeRecord {
-  const [lng, lat] = apiNode.geom.coordinates;
+function adaptNode(apiNode: ApiNode): NodeRecord {
   return {
     id: apiNode.id,
     map_id: apiNode.map_id,
-    lng,
-    lat,
+    lng: apiNode.lon,
+    lat: apiNode.lat,
     is_walkable: apiNode.is_walkable,
     terrain_type: apiNode.terrain_type,
   };

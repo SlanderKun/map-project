@@ -1,4 +1,3 @@
-import { center } from '@turf/turf';
 import React from 'react';
 
 interface IProps {

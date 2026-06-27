@@ -43,10 +43,12 @@ export class Graph {
     for (const edge of dbEdges) {
       const sourceNode = this.nodes.get(String(edge.source_id));
       if (sourceNode) {
-        sourceNode.edges.push({
-          targetId: String(edge.target_id),
-          weight: edge.weight,
-        });
+        sourceNode.edges.push({ targetId: String(edge.target_id), weight: edge.weight });
+      }
+      // Граф undirected: обратное ребро нужно для корректного backward-pass в bidirectional A*
+      const targetNode = this.nodes.get(String(edge.target_id));
+      if (targetNode) {
+        targetNode.edges.push({ targetId: String(edge.source_id), weight: edge.weight });
       }
     }
   }
